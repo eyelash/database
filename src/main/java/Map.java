@@ -8,6 +8,14 @@ public class Map {
 		Node[] put(String key, String value);
 	}
 
+	private static <T> void arraysSet(T[] array0, T[] array1, int index, T value) {
+		if (index < array0.length) {
+			array0[index] = value;
+		} else {
+			array1[index - array0.length] = value;
+		}
+	}
+
 	private static class Leaf implements Node {
 		private final String[] keys;
 		private final String[] values;
@@ -54,29 +62,14 @@ public class Map {
 				Leaf leaf1 = new Leaf(MIN_LENGTH);
 				assert MIN_LENGTH + MIN_LENGTH == values.length + 1;
 				for (int i = 0; i < index; i++) {
-					if (i < MIN_LENGTH) {
-						leaf0.keys[i] = keys[i];
-						leaf0.values[i] = values[i];
-					} else {
-						leaf1.keys[i - MIN_LENGTH] = keys[i];
-						leaf1.values[i - MIN_LENGTH] = values[i];
-					}
+					arraysSet(leaf0.keys, leaf1.keys, i, keys[i]);
+					arraysSet(leaf0.values, leaf1.values, i, values[i]);
 				}
-				if (index < MIN_LENGTH) {
-					leaf0.keys[index] = key;
-					leaf0.values[index] = value;
-				} else {
-					leaf1.keys[index - MIN_LENGTH] = key;
-					leaf1.values[index - MIN_LENGTH] = value;
-				}
+				arraysSet(leaf0.keys, leaf1.keys, index, key);
+				arraysSet(leaf0.values, leaf1.values, index, value);
 				for (int i = index; i < values.length; i++) {
-					if (i + 1 < MIN_LENGTH) {
-						leaf0.keys[i + 1] = keys[i];
-						leaf0.values[i + 1] = values[i];
-					} else {
-						leaf1.keys[i + 1 - MIN_LENGTH] = keys[i];
-						leaf1.values[i + 1 - MIN_LENGTH] = values[i];
-					}
+					arraysSet(leaf0.keys, leaf1.keys, i + 1, keys[i]);
+					arraysSet(leaf0.values, leaf1.values, i + 1, values[i]);
 				}
 				return new Node[] {leaf0, leaf1};
 			}
@@ -84,11 +77,8 @@ public class Map {
 	}
 
 	private static class INode implements Node {
-		private String firstKey;
-		private Node[] children;
-		private INode(int length) {
-			children = new Node[length];
-		}
+		private final String firstKey;
+		private final Node[] children;
 		private INode(Node[] children) {
 			firstKey = children[0].getFirstKey();
 			this.children = children;
@@ -114,61 +104,41 @@ public class Map {
 			}
 			Node[] newChildren = children[index].put(key, value);
 			if (newChildren.length == 1) {
-				INode node = new INode(children.length);
+				Node[] children0 = new Node[children.length];
 				for (int i = 0; i < index; i++) {
-					node.children[i] = children[i];
+					children0[i] = children[i];
 				}
-				node.children[index] = newChildren[0];
+				children0[index] = newChildren[0];
 				for (int i = index + 1; i < children.length; i++) {
-					node.children[i] = children[i];
+					children0[i] = children[i];
 				}
-				node.firstKey = node.children[0].getFirstKey();
-				return new Node[] {node};
+				return new Node[] {new INode(children0)};
 			} else {
 				assert newChildren.length == 2;
 				if (children.length < MAX_LENGTH) {
-					INode node = new INode(children.length + 1);
+					Node[] children0 = new Node[children.length + 1];
 					for (int i = 0; i < index; i++) {
-						node.children[i] = children[i];
+						children0[i] = children[i];
 					}
-					node.children[index] = newChildren[0];
-					node.children[index + 1] = newChildren[1];
+					children0[index] = newChildren[0];
+					children0[index + 1] = newChildren[1];
 					for (int i = index + 1; i < children.length; i++) {
-						node.children[i + 1] = children[i];
+						children0[i + 1] = children[i];
 					}
-					node.firstKey = node.children[0].getFirstKey();
-					return new Node[] {node};
+					return new Node[] {new INode(children0)};
 				} else {
-					INode node0 = new INode(MIN_LENGTH);
-					INode node1 = new INode(MIN_LENGTH);
+					Node[] children0 = new Node[MIN_LENGTH];
+					Node[] children1 = new Node[MIN_LENGTH];
 					assert MIN_LENGTH + MIN_LENGTH == children.length + 1;
 					for (int i = 0; i < index; i++) {
-						if (i < MIN_LENGTH) {
-							node0.children[i] = children[i];
-						} else {
-							node1.children[i - MIN_LENGTH] = children[i];
-						}
+						arraysSet(children0, children1, i, children[i]);
 					}
-					if (index < MIN_LENGTH) {
-						node0.children[index] = newChildren[0];
-					} else {
-						node1.children[index - MIN_LENGTH] = newChildren[0];
-					}
-					if (index + 1 < MIN_LENGTH) {
-						node0.children[index + 1] = newChildren[1];
-					} else {
-						node1.children[index + 1 - MIN_LENGTH] = newChildren[1];
-					}
+					arraysSet(children0, children1, index, newChildren[0]);
+					arraysSet(children0, children1, index + 1, newChildren[1]);
 					for (int i = index + 1; i < children.length; i++) {
-						if (i + 1 < MIN_LENGTH) {
-							node0.children[i + 1] = children[i];
-						} else {
-							node1.children[i + 1 - MIN_LENGTH] = children[i];
-						}
+						arraysSet(children0, children1, i + 1, children[i]);
 					}
-					node0.firstKey = node0.children[0].getFirstKey();
-					node1.firstKey = node1.children[0].getFirstKey();
-					return new Node[] {node0, node1};
+					return new Node[] {new INode(children0), new INode(children1)};
 				}
 			}
 		}
