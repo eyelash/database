@@ -12,4 +12,20 @@ public class DatabaseTest {
 		assertEquals("due", map.get("two"));
 		assertEquals("tre", map.get("three"));
 	}
+
+	@Test
+	public void testDatabase() {
+		Database database = new Database();
+		database.writeTransaction(transaction -> {
+			transaction.put("one", "uno");
+			transaction.put("two", "due");
+			transaction.put("three", "tre");
+			return Database.TransactionResult.COMMIT;
+		});
+		database.readTransaction(transaction -> {
+			assertEquals("uno", transaction.get("one"));
+			assertEquals("due", transaction.get("two"));
+			assertEquals("tre", transaction.get("three"));
+		});
+	}
 }
